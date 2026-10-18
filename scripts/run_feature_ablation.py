@@ -44,7 +44,7 @@ if torch.cuda.is_available():
     print(f"Total Dedicated VRAM:    {props.total_memory / (1024**2):.1f} MiB")
 
 # 2. Paths
-PROJECT_ROOT = Path(r"c:\Users\sheok\OneDrive\Desktop\New folder (2)\Major Project")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR     = PROJECT_ROOT / "data"
 RESULTS_DIR  = PROJECT_ROOT / "results"
 MODELS_DIR   = RESULTS_DIR / "models"

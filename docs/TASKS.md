@@ -76,6 +76,14 @@ Future tickets remain **Proposed** until ChatGPT and the user approve them. Appr
 - **Status:** Completed for existing-environment verification and documentation.
 - **Acceptance criteria:** Direct inference dependencies and existing versions are recorded; setup, CLI, artifact, and test instructions are documented; contract and parity tests, CLI help, and dependency consistency check pass in the existing environment; fresh-install reproducibility is not claimed.
 
+### T006B — Notebook and Experiment-Script Portability
+
+- **Goal:** Resolve repository roots portably in notebooks 01–07 and the feature-ablation script, and replace Notebook 04's incompatible trapezoidal integration call.
+- **Priority:** High; removes the identified machine-specific path assumptions and NumPy API incompatibility.
+- **Dependencies:** T006A; approved source-cell and script boundaries.
+- **Status:** Completed.
+- **Acceptance criteria:** All seven notebooks resolve from the repository root and `notebooks/` using repository markers and reject unrelated directories; the script uses `__file__`-relative resolution; Notebook 04 uses `np.trapezoid` with existing arguments; seven portability, 11 EKF baseline, and 14 EKF-loop tests pass; notebook outputs and metadata are preserved; no experiment or training is run.
+
 ## Proposed ticket sequence
 
 ### T004 — Preprocessing and Inference Verification
@@ -106,23 +114,15 @@ Future tickets remain **Proposed** until ChatGPT and the user approve them. Appr
 - **Goal:** Replace machine-specific project roots in approved development paths and document a reproducible environment.
 - **Priority:** High.
 - **Dependencies:** T002; choose the supported execution environment.
-- **Status:** In Progress (T006A complete; T006B proposed).
-- **Acceptance criteria:** Frozen inference dependencies and existing-environment setup are documented; selected project entry points resolve files relative to the repository; known NumPy compatibility issues are addressed with focused checks; fresh-install verification and any environment changes occur only under explicit ticket scope.
-
-### T006B — Project Path Portability and NumPy Compatibility
-
-- **Goal:** Replace approved machine-specific absolute project roots with repository-relative paths and repair the targeted `np.trapz` compatibility issue.
-- **Priority:** High; improves portability of selected project entry points and restores compatibility in the identified notebook.
-- **Dependencies:** T006A; approve the specific files and verification boundaries before implementation.
-- **Status:** Proposed.
-- **Acceptance criteria:** Selected notebook/script paths resolve from the repository without machine-specific roots; `notebooks/04_ML_Baselines.ipynb` no longer depends on unavailable `np.trapz` in the verified NumPy environment; focused syntax or behavior checks pass without running full notebooks, experiments, or training; unrelated paths and scientific calculations remain unchanged.
+- **Status:** Completed within the approved dependency and path portability scope (T006A and T006B complete). Fresh-environment installation and verification remain outstanding.
+- **Acceptance criteria:** Frozen inference requirements and setup are documented; approved notebooks and the feature-ablation entry point resolve paths portably; the identified NumPy compatibility call is repaired and focused checks pass; no complete project lockfile or fresh-install verification is claimed.
 
 ### T007 — Experiment Provenance and Results Reconciliation
 
 - **Goal:** Trace result tables to producing code/configuration/checkpoints and reconcile conflicting reports.
 - **Priority:** High; necessary for defensible academic claims.
 - **Dependencies:** T002; T003–T006 as needed to identify current behavior.
-- **Status:** Proposed.
+- **Status:** Proposed (next ticket).
 - **Acceptance criteria:** Frozen seed-42 metrics remain distinct from five-seed means; grouped-correction producer or provenance gap is recorded; conflicting tables and report claims are resolved or clearly marked historical; saved results are not silently overwritten.
 
 ## Additional proposed work identified by T000
