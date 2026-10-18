@@ -1,7 +1,7 @@
 # Project Current State
 
 **Project:** Machine Learning-Based Initial State-of-Charge Estimation for Lithium-Ion Batteries
-**Last reviewed:** T004B input-contract validation
+**Last reviewed:** T005A EKF prediction sign repair
 **Project scope:** Approved initial-SoC estimation only  
 **Evidence note:** Performance figures below are historical saved results, not freshly reproduced. T003 performed one inference smoke test, T004A performed numerical parity checks, and T004B checked the input contract; none recomputed aggregate metrics.
 
@@ -53,7 +53,9 @@ These are different experiments and model states. In particular, 4.1622 is the f
 ## Known bugs and blocked functionality
 
 - T003 repaired malformed strings and the duplicate `--no-clip` help text in `scripts/run_initial_soc_inference.py`; the module now parses and imports, and CLI `--help` works.
-- `notebooks/02_Baselines.ipynb` predicts SoC using subtraction of current. Given the declared negative-discharge convention, negative discharge current increases predicted SoC in the process step. The EKF needs a correctness repair and focused verification. The saved EKF metric does not establish correctness.
+- T005A corrected the EKF SoC state prediction in `notebooks/02_Baselines.ipynb`: negative current (discharge) now lowers SoC, and positive current (charge/regen) raises it. The RC polarization and terminal-voltage signs were reviewed and left unchanged: discharge drives polarization negative, while `I * R_IN` and `Vth` lower terminal voltage.
+- The EKF's full measurement-update loop and accuracy remain unverified after the prediction-sign repair. Its experiment initializes `x0 = [soc_ref[0], 0]`, so it tracks a trajectory from known reference SoC and is not directly comparable to the ML estimator's unknown initial-SoC task. The notebook's saved EKF metrics and outputs remain historical and have not been recomputed.
+- Potential first-step alignment issue for T005B: the loop predicts before processing every measurement, including `k=0`, using `current[0]` and `dt_arr[0]` (initialized to the median timestep), while `x0` is defined from the reference at sample 0. Confirm whether these inputs describe the transition into or out of the indexed sample before interpreting full-loop results.
 - `notebooks/04_ML_Baselines.ipynb` calls `np.trapz`; the inspected project environment's NumPy 2.5.2 does not expose `np.trapz` and does expose `np.trapezoid`.
 - Several notebooks and `scripts/run_feature_ablation.py` contain a machine-specific absolute root pointing to an earlier project copy. New development should use repository-relative paths.
 - `scripts/run_initial_soc_inference.py` requires exactly 500 rows and three finite real numeric V/I/T channels for the frozen model. Units (V, A, °C), synchronous sampling, and V/I/T ordering are caller contracts; measurement values cannot independently prove these semantics.
@@ -73,7 +75,8 @@ These are different experiments and model states. In particular, 4.1622 is the f
 - A saved dataset-validation text report records window-count reconciliation, split checks, and five example target checks; its producer was not found, so it is historical evidence rather than a repeatable test command.
 - T003 smoke-tested the loaded frozen model on one saved validation window (`N=500`) and checked the API's correction/clipping switch combinations. This is a single-window execution check, not an accuracy evaluation or numerical-consistency study.
 - T004A established numerical consistency within the five-window and dtype scope above. T004B completed the documented input-contract checks. No new model-accuracy results were obtained, and no scientific artifacts were modified. Inference cannot verify timing when timestamps are absent or establish channel units and semantics from numeric arrays alone. Broader model-accuracy verification was not performed by either ticket.
-- The EKF's current-sign behavior is defective. Existing saved EKF results must not be presented as a verified correct baseline.
+- T005A added 11 focused tests that extract and exercise the actual notebook prediction helper, verify its use by the EKF loop, compare one-step SoC prediction with existing Coulomb counting, and check polarization and the notebook's terminal-voltage expression. All 11 passed on isolated rerun. Independent review confirmed only notebook cells 12 and 15 changed and all other sources, outputs, execution counts, and metadata remained unchanged. No full EKF loop, trajectory, or accuracy evaluation was run; saved EKF outputs and scientific artifacts were not modified.
+- The EKF's SoC prediction current-sign defect is corrected and focused-tested. Existing saved EKF results still must not be presented as results of the repaired implementation; full-loop correctness awaits T005B.
 - Sensor-robustness results use synthetic perturbations, not measurements from deployment sensors.
 - Current data cover one Panasonic cell and do not verify cross-cell or cross-chemistry generalization.
 - Reports contain conflicting values for the frozen model versus ablation means, architecture parameter counts, training settings, capacity estimates, and experiment counts. Reconcile against code and saved artifacts before reuse.

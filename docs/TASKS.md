@@ -52,6 +52,14 @@ Future tickets remain **Proposed** until ChatGPT and the user approve them. Appr
 - **Status:** Completed.
 - **Acceptance criteria:** Exactly 500 finite numeric V/I/T samples are required; optional timestamps are checked for shape, order, duration, and maximum gap; only approved CSV layouts are accepted; 17 contract and seven parity tests pass; no model accuracy claim or scientific artifact change is made.
 
+### T005A — EKF State-Prediction Sign Repair and Focused Tests
+
+- **Goal:** Correct the EKF SoC prediction sign for negative-discharge current and test the actual notebook helper in isolation.
+- **Priority:** High; necessary before relying on EKF baseline claims.
+- **Dependencies:** T000 current-sign finding; confirm polarization and terminal-voltage conventions.
+- **Status:** Completed.
+- **Acceptance criteria:** The corrected helper is used by the notebook loop; 11 focused sign, bounds, capacity-conversion, polarization, voltage-direction, and Coulomb-counting checks pass; initial-reference-SoC assumption and historical result status are stated; no full trajectory or saved result is regenerated.
+
 ## Proposed ticket sequence
 
 ### T004 — Preprocessing and Inference Verification
@@ -67,8 +75,16 @@ Future tickets remain **Proposed** until ChatGPT and the user approve them. Appr
 - **Goal:** Correct the current-sign defect and verify discharge/charge behavior in the EKF process model.
 - **Priority:** High; required before quoting EKF as a sound benchmark.
 - **Dependencies:** Approval; confirmation of intended current and polarization sign conventions.
+- **Status:** In Progress (T005A complete; T005B proposed next).
+- **Acceptance criteria:** Focused prediction tests show discharge lowers SoC and charging raises it; T005B resolves loop timing and verifies the measurement update and complete EKF state flow; voltage conventions remain internally consistent; historical metrics are not attributed to repaired code without a new approved run.
+
+### T005B — EKF Loop Timing and Measurement-Update Verification
+
+- **Goal:** Resolve the possible first-step time-index alignment issue and verify the complete EKF prediction/update flow with deterministic focused cases.
+- **Priority:** High; required before treating the EKF baseline as fully verified.
+- **Dependencies:** T005A; establish whether `current[k]` and `dt_arr[k]` represent the transition into or out of sample `k`.
 - **Status:** Proposed.
-- **Acceptance criteria:** Focused sign/edge checks show discharge lowers predicted SoC and charging raises it under declared conventions; voltage-model conventions remain internally consistent; any renewed benchmark is tied to an explicit run and code state.
+- **Acceptance criteria:** Document the sample/time convention; tests exercise the actual loop or extracted deterministic update logic without running the full notebook; verify measurement innovation and update behavior, covariance/state consistency, boundary behavior, and index alignment; do not regenerate or claim historical trajectory metrics.
 
 ### T006 — Dependency and Path Portability
 
