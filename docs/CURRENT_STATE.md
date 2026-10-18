@@ -1,8 +1,9 @@
 # Project Current State
 
-**Last reviewed:** T000 repository audit and T001 documentation foundation  
+**Project:** Machine Learning-Based Initial State-of-Charge Estimation
+**Last reviewed:** T003 inference repair and verification
 **Project scope:** Approved initial-SoC estimation only  
-**Evidence note:** Performance figures below are existing saved artifacts examined during T000. They were not rerun or freshly reproduced for this document.
+**Evidence note:** Performance figures below are historical saved results, not freshly reproduced. T003 performed one inference smoke test only and did not recompute aggregate metrics.
 
 ## Objective and approved scope
 
@@ -22,7 +23,7 @@ Current documented data flow:
 6. Apply a training-fitted StandardScaler and a three-layer MLP, `12 → 64 → 32 → 1`, with ReLU hidden layers.
 7. Convert model output to percent and optionally clip to `[0, 100]`.
 
-The designated frozen artifact is `results/models/ablation_group_c_seed_42.pt`; its associated artifacts are `data/ablation_scaler_group_c.pkl` and `data/initial_soc_scaler.npz`. The intended architecture has 2,945 trainable parameters. The artifact files exist, but their presence does not establish that the current inference program runs.
+The designated frozen artifact is `results/models/ablation_group_c_seed_42.pt`; its associated artifacts are `data/ablation_scaler_group_c.pkl` and `data/initial_soc_scaler.npz`. The intended architecture has 2,945 trainable parameters. T003 confirmed that the checkpoint and scalers load successfully and that the inference API produces a prediction for one saved 500-sample validation window.
 
 ## Data and preprocessing
 
@@ -47,11 +48,11 @@ The repository contains EDA, Coulomb-counting/EKF baselines, six observation-dur
 | Grouped correction, clipped | Three −10 °C evaluation files, 315 windows; existing grouped result table | **2.8535 percentage points** |
 | Grouped correction, clipped, post-hoc | −20 °C test; existing grouped result table | **7.8633 percentage points** |
 
-These are different experiments and model states. In particular, 4.1622 is the five-seed mean; it is not the saved seed-42 model's validation score. None of these figures was freshly reproduced in T000 or T001. The grouped-correction result tables exist, but the code that generated those grouped tables was not located during T000. Notebook 07 contains a separate random-window correction experiment.
+These are different experiments and model states. In particular, 4.1622 is the five-seed mean; it is not the saved seed-42 model's validation score. None of these figures was freshly reproduced in T000–T003. The grouped-correction result tables exist, but the code that generated those grouped tables was not located during T000. Notebook 07 contains a separate random-window correction experiment.
 
 ## Known bugs and blocked functionality
 
-- `scripts/run_initial_soc_inference.py` has an unterminated string near line 340, further malformed print strings, and duplicate argument text in the `--no-clip` argument. Static parsing fails; the current API and CLI are blocked.
+- T003 repaired malformed strings and the duplicate `--no-clip` help text in `scripts/run_initial_soc_inference.py`; the module now parses and imports, and CLI `--help` works.
 - `notebooks/02_Baselines.ipynb` predicts SoC using subtraction of current. Given the declared negative-discharge convention, negative discharge current increases predicted SoC in the process step. The EKF needs a correctness repair and focused verification. The saved EKF metric does not establish correctness.
 - `notebooks/04_ML_Baselines.ipynb` calls `np.trapz`; the inspected project environment's NumPy 2.5.2 does not expose `np.trapz` and does expose `np.trapezoid`.
 - Several notebooks and `scripts/run_feature_ablation.py` contain a machine-specific absolute root pointing to an earlier project copy. New development should use repository-relative paths.
@@ -64,7 +65,8 @@ These are different experiments and model states. In particular, 4.1622 is the f
 - No automated test suite or standard test command was found.
 - Notebooks 03 and 05 have no saved code-cell execution history/output; Notebook 04 has only one executed code cell. Notebooks 06 and 07 have saved execution counts and outputs. Other notebook outputs are mixed or partial.
 - A saved dataset-validation text report records window-count reconciliation, split checks, and five example target checks; its producer was not found, so it is historical evidence rather than a repeatable test command.
-- Current inference/API behavior is untested because the module does not parse.
+- T003 smoke-tested the loaded frozen model on one saved validation window (`N=500`) and checked the API's correction/clipping switch combinations. This is a single-window execution check, not an accuracy evaluation or numerical-consistency study.
+- Full input-contract validation and numerical consistency between training and inference preprocessing remain unverified. The inference API still accepts windows shorter than the specified 500 samples and does not enforce timestamp-gap or finite-value requirements.
 - The EKF's current-sign behavior is defective. Existing saved EKF results must not be presented as a verified correct baseline.
 - Sensor-robustness results use synthetic perturbations, not measurements from deployment sensors.
 - Current data cover one Panasonic cell and do not verify cross-cell or cross-chemistry generalization.
@@ -74,8 +76,8 @@ These are different experiments and model states. In particular, 4.1622 is the f
 
 - Existing `.venv/pyvenv.cfg` identifies Python 3.12.3. During T000, the interpreter identified NumPy 2.5.2. Other listed package versions are recorded in the environment metadata, not a pinned dependency manifest.
 - PyTorch, scikit-learn, NumPy, pandas, SciPy, Jupyter, and plotting libraries are present in the inspected environment. No dependency lockfile or project dependency manifest was found.
-- **Git is not initialized at this repository location.** Read-only Git commands returned “not a git repository”; no current branch, working-tree status, or commit history is available here.
-- Git initialization, ignore rules, and GitHub synchronization are assigned to T002. T001 did not perform those actions.
+- Git is initialized on `main`; the reviewed initial checkpoint has been pushed to the approved private GitHub repository and local `main` is synchronized with `origin/main`.
+- `.gitignore` excludes raw dataset payloads, the large processed window dataset, local environments, and generated report exports. Excluded source data remain local; their absence from Git is not deletion.
 
 ## Open technical and research questions
 

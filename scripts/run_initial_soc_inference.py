@@ -289,7 +289,6 @@ def main():
     )
     parser.add_argument(
         "--no-clip", action="store_true",
-        help="Do not clip predictions to physical [0.0, 100.0]% bounds."
         help="Do not clip predictions to physical [0.0, 100.0]%% bounds."
     )
     parser.add_argument(
@@ -337,10 +336,7 @@ def main():
         err_raw = result["raw_model_soc_pct"] - y_true_pct
         err_corr = result["corrected_soc_pct"] - y_true_pct
 
-        print("
-" + "="*65)
-        print()
-        print("="*65)
+        print("\n" + "=" * 65)
         print(f"INITIAL SOC INFERENCE REPORT: Validation Window #{idx} (-10°C)")
         print("="*65)
         print(f"True Initial SoC (Ah Reference): {y_true_pct:8.2f} %")
@@ -350,9 +346,7 @@ def main():
               f"I={result['operating_stats']['mean_current_A']:+.2f}A, "
               f"T={result['operating_stats']['mean_temp_C']:.1f}°C")
         print(f"Extracted 12 Features (Group C): {result['features_12']}")
-        print("="*65 + "
-")
-        print("="*65)
+        print("=" * 65)
         print()
         return
 
@@ -378,10 +372,7 @@ def main():
             apply_current_correction=args.apply_correction
         )
 
-        print("
-" + "="*60)
-        print()
-        print("="*60)
+        print("\n" + "=" * 60)
         print(f"INITIAL SOC INFERENCE REPORT: {csv_path.name}")
         print("="*60)
         print(f"Estimated Initial SoC: {result['predicted_soc_pct']:.2f} %")
@@ -391,16 +382,12 @@ def main():
         print(f"Mean Operating Point:  V={result['operating_stats']['mean_voltage_V']:.3f}V, "
               f"I={result['operating_stats']['mean_current_A']:+.2f}A, "
               f"T={result['operating_stats']['mean_temp_C']:.1f}°C")
-        print("="*60 + "
-")
-        print("="*60)
+        print("=" * 60)
         print()
         return
 
     # If neither provided, print usage
     parser.print_help()
-    print("
-Quick self-test example: python scripts/run_initial_soc_inference.py --test-sample 0")
     print()
     print("Quick self-test example: python scripts/run_initial_soc_inference.py --test-sample 0")
 

@@ -20,23 +20,23 @@ Future tickets remain **Proposed** until ChatGPT and the user approve them. Appr
 - **Status:** Completed.
 - **Acceptance criteria:** Only `AGENTS.md`, `docs/CURRENT_STATE.md`, and `docs/TASKS.md` created or updated; initial-SoC-only scope recorded; evidence distinguished from fresh verification; T002–T007 and additional follow-ups listed.
 
-## Proposed ticket sequence
-
 ### T002 — Git Initialization, .gitignore, and GitHub Setup
 
 - **Goal:** Establish version control for the approved repository and prepare safe GitHub synchronization.
 - **Priority:** High; enables reviewable checkpoints.
-- **Dependencies:** Explicit user approval; confirm repository location, intended remote, and treatment of large data/artifacts first.
-- **Status:** Proposed.
-- **Acceptance criteria:** Agreed Git repository and branch exist; an appropriate `.gitignore` is reviewed; no private credentials are stored; remote points to the user-designated private repository; initial status is reviewed. Commit/push only if explicitly included in the approved ticket.
+- **Dependencies:** T001; repository location, remote, and artifact boundaries approved.
+- **Status:** Completed.
+- **Acceptance criteria:** Local `main` and reviewed `.gitignore` established; 101 reviewed files committed in the initial checkpoint and pushed to the designated private repository; excluded datasets and uncertain third-party materials remain local.
 
 ### T003 — Repair Broken Inference API/CLI
 
-- **Goal:** Make the existing Group C seed-42 inference module syntactically valid and usable through its documented API/CLI.
-- **Priority:** Critical; current inference is blocked.
-- **Dependencies:** T002 recommended; approval; explicit allowed-file list.
-- **Status:** Proposed.
-- **Acceptance criteria:** Module parses/imports; CLI help and a documented local sample invocation operate; output fields and clipping/correction switches match documentation; no unrelated feature or report changes.
+- **Goal:** Restore the frozen Group C seed-42 inference module's syntax, import, and CLI help behavior.
+- **Priority:** Critical; inference was blocked.
+- **Dependencies:** T002; explicit approval and allowed-file boundary.
+- **Status:** Completed.
+- **Acceptance criteria:** Module syntax/import and CLI `--help` pass; frozen artifacts load; one saved 500-sample validation-window API smoke test completes; correction/clipping switches follow their existing formulas; no unrelated project files change.
+
+## Proposed ticket sequence
 
 ### T004 — Preprocessing and Inference Verification
 
