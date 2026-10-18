@@ -1,7 +1,7 @@
 # Project Current State
 
 **Project:** Machine Learning-Based Initial State-of-Charge Estimation for Lithium-Ion Batteries
-**Last reviewed:** T005B EKF loop timing and measurement-update verification
+**Last reviewed:** T006A frozen inference environment verification
 **Project scope:** Approved initial-SoC estimation only  
 **Evidence note:** Performance figures below are historical saved results, not freshly reproduced. T003 performed one inference smoke test, T004A performed numerical parity checks, and T004B checked the input contract; none recomputed aggregate metrics.
 
@@ -86,8 +86,10 @@ These are different experiments and model states. In particular, 4.1622 is the f
 
 ## Environment and Git status
 
-- Existing `.venv/pyvenv.cfg` identifies Python 3.12.3. During T000, the interpreter identified NumPy 2.5.2. Other listed package versions are recorded in the environment metadata, not a pinned dependency manifest.
-- PyTorch, scikit-learn, NumPy, pandas, SciPy, Jupyter, and plotting libraries are present in the inspected environment. No dependency lockfile or project dependency manifest was found.
+- The existing, tested inference environment is Windows (`win32`) with Python 3.12.3, NumPy 2.5.2, PyTorch 2.6.0+cu124 (CUDA 12.4 build; CUDA was available), scikit-learn 1.9.0, SciPy 1.18.1, and joblib 1.5.3. The inference CLI defaults to CPU; CUDA use requires a compatible device/build.
+- `requirements-inference.txt` pins the direct frozen-inference dependencies NumPy, PyTorch, and scikit-learn to versions verified in that existing environment. SciPy, joblib, and threadpoolctl are transitive dependencies and are not fully locked. `docs/ENVIRONMENT.md` records setup, invocation, required artifacts, and environment limitations.
+- T006A reran `tests/test_inference_contract.py` (17/17 passed) and `tests/test_inference_parity.py` (7/7 passed using five saved validation windows), CLI `--help`, and `pip check`; all passed. This verifies the existing environment only. No fresh environment was created or installed, so fresh-install reproducibility has not been demonstrated. No model-accuracy results were produced.
+- The inference dependency manifest covers the frozen inference path, not every historical notebook or experiment. No complete lockfile for the entire project exists.
 - Git is initialized on `main`; the reviewed initial checkpoint has been pushed to the approved private GitHub repository and local `main` is synchronized with `origin/main`.
 - `.gitignore` excludes raw dataset payloads, the large processed window dataset, local environments, and generated report exports. Excluded source data remain local; their absence from Git is not deletion.
 

@@ -1,0 +1,6 @@
+# Verified in the existing Windows, Python 3.12.3 inference environment.
+# PyTorch is the CUDA 12.4 build; see docs/ENVIRONMENT.md for its wheel index
+# and CPU/platform-specific installation notes.
+numpy==2.5.2
+scikit-learn==1.9.0
+torch==2.6.0+cu124

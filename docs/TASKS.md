@@ -68,6 +68,14 @@ Future tickets remain **Proposed** until ChatGPT and the user approve them. Appr
 - **Status:** Completed within deterministic synthetic-test scope.
 - **Acceptance criteria:** Sample 0 receives measurement update without propagation; later prediction uses interval-start current and actual interval duration; measurement update uses current-sample current; innovation, Jacobian, gain, Joseph covariance and state flow pass focused deterministic tests; notebook outputs and historical metrics remain unchanged.
 
+### T006A — Inference Environment and Dependency Reproducibility
+
+- **Goal:** Identify and document minimum dependencies for frozen initial-SoC inference using the existing verified environment.
+- **Priority:** High; establishes a reproducible starting point for inference.
+- **Dependencies:** T003 inference API/CLI; existing local environment and frozen artifacts.
+- **Status:** Completed for existing-environment verification and documentation.
+- **Acceptance criteria:** Direct inference dependencies and existing versions are recorded; setup, CLI, artifact, and test instructions are documented; contract and parity tests, CLI help, and dependency consistency check pass in the existing environment; fresh-install reproducibility is not claimed.
+
 ## Proposed ticket sequence
 
 ### T004 — Preprocessing and Inference Verification
@@ -98,8 +106,16 @@ Future tickets remain **Proposed** until ChatGPT and the user approve them. Appr
 - **Goal:** Replace machine-specific project roots in approved development paths and document a reproducible environment.
 - **Priority:** High.
 - **Dependencies:** T002; choose the supported execution environment.
+- **Status:** In Progress (T006A complete; T006B proposed).
+- **Acceptance criteria:** Frozen inference dependencies and existing-environment setup are documented; selected project entry points resolve files relative to the repository; known NumPy compatibility issues are addressed with focused checks; fresh-install verification and any environment changes occur only under explicit ticket scope.
+
+### T006B — Project Path Portability and NumPy Compatibility
+
+- **Goal:** Replace approved machine-specific absolute project roots with repository-relative paths and repair the targeted `np.trapz` compatibility issue.
+- **Priority:** High; improves portability of selected project entry points and restores compatibility in the identified notebook.
+- **Dependencies:** T006A; approve the specific files and verification boundaries before implementation.
 - **Status:** Proposed.
-- **Acceptance criteria:** Selected entry points resolve files relative to the repository; required dependencies and versions are declared; existing environment incompatibilities are addressed without unrelated dependency additions; no environment installation unless separately authorized.
+- **Acceptance criteria:** Selected notebook/script paths resolve from the repository without machine-specific roots; `notebooks/04_ML_Baselines.ipynb` no longer depends on unavailable `np.trapz` in the verified NumPy environment; focused syntax or behavior checks pass without running full notebooks, experiments, or training; unrelated paths and scientific calculations remain unchanged.
 
 ### T007 — Experiment Provenance and Results Reconciliation
 
