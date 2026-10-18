@@ -1,0 +1,5 @@
+Model,Val RMSE (%),Val MAE (%)
+Linear Regression (13 feats with Q_win),8.75,6.77
+Linear Regression (12 feats without Q_win),8.75,6.77
+"MLP Summary (13 feats with Q_win, avg 3 seeds)",4.13,3.29
+"MLP Summary (12 feats without Q_win, avg 3 seeds)",4.38,3.41

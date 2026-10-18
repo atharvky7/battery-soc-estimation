@@ -1,0 +1,6 @@
+Method,RMSE (%),MAE (%),Notes
+"CC (perfect, theoretical ceiling)",0.0838,0.0724,Theoretical ceiling; ≈ reference by construction — not a real-world baseline
+CC with 10% wrong initial SoC,9.8488,9.8377,Primary ML target: phone plugged in mid-discharge
+CC with 50 mA constant bias,6.2906,5.4476,Sensor offset: accumulates linearly at 10.7% over 6 hours
+"EKF (principled Q/R, HPPC params)",2.4021,2.1485,"Principled EKF: Q=diag(5e-5, 1e-6), R=1e-4; requires battery model params"
+Target ML (Section 2),TBD,TBD,Goal: RMSE < CC-wrong-init without needing initial SoC or model params

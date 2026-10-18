@@ -1,0 +1,10 @@
+File_Index,Source_File,Profile,Window_Count,Start_Idx,End_Idx,Group
+0,06-07-17_08.39 n10degC_HWFET_Pan18650PF.mat,Highway Schedule (HWFET),95,0,95,Evaluation File
+1,06-07-17_08.39 n10degC_LA92_Pan18650PF.mat,Dynamometer Dynamic (LA92),134,95,229,Calibration File
+2,06-07-17_08.39 n10degC_UDDS_Pan18650PF.mat,Urban Dynamometer (UDDS),211,229,440,Calibration File
+3,06-07-17_08.39 n10degC_US06_Pan18650PF.mat,High-Acceleration (US06),57,440,497,Calibration File
+4,06-10-17_11.25 n10degC_Cycle_1_Pan18650PF.mat,Dynamic Cycle 1,114,497,611,Calibration File
+5,06-10-17_18.35 n10degC_Cycle_2_Pan18650PF.mat,Dynamic Cycle 2,113,611,724,Evaluation File
+6,06-11-17_01.39 n10degC_Cycle_3_Pan18650PF.mat,Dynamic Cycle 3,107,724,831,Evaluation File
+7,06-11-17_08.42 n10degC_Cycle_4_Pan18650PF.mat,Dynamic Cycle 4,117,831,948,Calibration File
+8,06-14-17_13.12 n10degC_NN_Pan18650PF.mat,Neural Network Profile (NN),97,948,1045,Calibration File

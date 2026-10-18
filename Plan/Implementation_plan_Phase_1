@@ -1,0 +1,374 @@
+# SoC Estimation for Li-ion Batteries Using Deep Learning
+### Full Project Master Plan — Group 1 (Arpit + Atharva)
+
+---
+
+## First: Dataset Housekeeping
+
+### KEEP These (Your Working Arsenal)
+
+| Dataset | Why Keep |
+|---|---|
+| **Panasonic 18650PF** (`Panasonic/`) | Primary training dataset. Dynamic profiles, multi-temperature. |
+| **LG 18650HG2** (`LG 18650HG2.../`) | Cross-validation / Transfer Learning target. Gold-standard benchmark. |
+| **Mendeley EV** (`EV Lithium Ion.../`) | Quickest dataset to learn on. Clean SoC column. Good for early experiments. |
+
+### DELETE These (Wrong task, wasted space)
+
+| Dataset | Why Delete | Approx Size |
+|---|---|---|
+| `Oxford_Battery_Degradation_Dataset_1.mat` (root) | Duplicate — same file in `oxford/` | ~253 MB |
+| `oxford/` folder | SoH/Degradation only. No SoC ground truth. | ~253 MB |
+| `battery_alt_dataset/` | NASA ALT. RUL/Prognostics. No SoC. Wrong task. | ~1.3 GB |
+| `nsc7hnsg4s-1/` (HUST) | 1.1GB zip. SoH only. Not SoC. | ~1.1 GB |
+
+**Total freed: ~3 GB+**
+
+> After deleting, your DATASET folder should have only 3 folders:
+> `Panasonic/` | `LG 18650HG2.../` | `EV Lithium Ion.../`
+
+---
+
+## The Three Sections of the Project
+
+```
+SECTION 1 — Understanding & Foundations          (Weeks 1-4)
+├── Learn the domain deeply
+├── Set up environment
+├── Explore & clean the data (EDA)
+├── Build Traditional baselines (Coulomb Counting, EKF)
+└── Output: Baseline SoC estimates + plots
+
+SECTION 2 — ML Model Development                (Weeks 5-9)
+├── LSTM (vanilla baseline)
+├── Bidirectional LSTM
+├── CNN-LSTM (main model)
+├── Hyperparameter tuning
+└── Output: Trained models + comparison table
+
+SECTION 3 — Advanced Techniques & G2 Handoff   (Weeks 10-13)
+├── Transfer Learning (Panasonic -> LG HG2)
+├── Real-time API / inference function for G2
+├── Final report, poster, presentation
+└── Output: Working SoC estimator G2 can call
+```
+
+---
+---
+
+# SECTION 1 — Detailed Plan: Understanding & Foundations
+
+**Goal:** By end of Section 1, you can explain every equation, plot the battery behavior like an expert, and have running Python code that estimates SoC using two traditional methods (Coulomb Counting + EKF) to serve as the baseline your ML models must beat.
+
+---
+
+## Phase 1.1 — Domain Knowledge & Environment Setup
+**Who:** Both (Arpit + Atharva together)
+**Duration:** ~3-4 days
+
+### What You Need to Learn First (in this order):
+
+**A. The Battery Equivalent Circuit Model (ECM)**
+- What is a Li-ion battery chemically?
+- First-order Thevenin model: V_batt = V_OC + I * R_in + V_th
+- What is V_OC (Open Circuit Voltage)?
+- What is R_in (Internal Resistance)?
+- What is the RC network (R_th, C_th) and why does it exist?
+- How does voltage relate to SoC? (The OCV-SoC curve)
+
+**B. Why Traditional Methods Fail**
+- Coulomb Counting: accumulates error over time
+- OCV method: only works when battery is at rest
+- Kalman Filter: needs accurate battery model parameters
+
+**C. Why ML is the Right Approach**
+- Learns the nonlinear V, I, T -> SoC mapping from data
+- No need for a perfect battery model
+- Handles varying temperature naturally
+
+### Environment Setup (Arpit does this, Atharva verifies):
+
+```
+Install:
+- Python 3.10+
+- Jupyter Notebook / VS Code
+- Libraries: numpy, pandas, matplotlib, scipy, scikit-learn
+             tensorflow (or pytorch), tqdm
+```
+
+```bash
+pip install numpy pandas matplotlib scipy scikit-learn tensorflow tqdm openpyxl
+```
+
+Create project folder structure:
+```
+Major Project/
+├── DATASET/
+│   ├── Panasonic/
+│   ├── LG 18650HG2.../
+│   └── EV Lithium Ion.../
+├── notebooks/
+│   ├── 01_EDA_Mendeley.ipynb
+│   ├── 02_EDA_Panasonic.ipynb
+│   ├── 03_Baselines.ipynb
+│   └── 04_EDA_LG_HG2.ipynb
+├── src/
+│   ├── data_loader.py
+│   ├── preprocessing.py
+│   ├── baselines.py
+│   └── utils.py
+└── results/
+    └── plots/
+```
+
+---
+
+## Phase 1.2 — EDA on Mendeley Dataset (Your Warm-Up)
+**Who:** Arpit leads, Atharva reviews
+**Duration:** ~2-3 days
+**Dataset:** `EV Lithium Ion Battery State of Charge Dataset/charging and discharging (1).xlsx`
+
+**Why start here:** Simplest dataset — already has a clean `soc` column. Perfect for learning EDA before tackling the more complex Panasonic data.
+
+### Tasks:
+
+**Step 1 — Load and inspect**
+```python
+import pandas as pd
+df = pd.read_excel("charging and discharging (1).xlsx")
+print(df.head())
+print(df.info())
+print(df.describe())
+```
+
+**Step 2 — What to look at:**
+- How many unique cycles? (Cycle_Number column)
+- Distribution of SoC — does it go 0 to 100 cleanly?
+- Are there anomalies? (We found 8V spikes earlier — clean them)
+- Plot one full charge cycle: Time vs Voltage, Time vs Current, Time vs SoC
+
+**Step 3 — Key plots to generate:**
+1. Voltage vs SoC scatter (learn the OCV-SoC curve shape)
+2. One complete cycle time-series (V, I, T, SoC on 4 subplots)
+3. SoC distribution histogram
+4. Current distribution (positive = charge, negative = discharge)
+
+**Step 4 — Data Cleaning:**
+- Remove rows where Voltage > 4.5V or < 2.5V (sensor spikes)
+- Remove rows where SoC > 100 or SoC < 0
+- Handle NaN values in `Current_Mod` column (540,073 nulls found in earlier analysis)
+- Note the sampling interval (delta_t)
+
+**Deliverable:** A clean Jupyter notebook `01_EDA_Mendeley.ipynb` with all plots and observations commented.
+
+---
+
+## Phase 1.3 — EDA on Panasonic Dataset (The Main Dataset)
+**Who:** Atharva leads, Arpit reviews
+**Duration:** ~4-5 days
+**Dataset:** `DATASET/Panasonic/Panasonic 18650PF Data/`
+
+This is more complex. The data is in `.mat` format (MATLAB files), not CSV. You'll need `scipy.io` to read them.
+
+### Tasks:
+
+**Step 1 — Understand folder structure:**
+```
+25degC/       -> Main working temperature files
+               - .mat files for each drive cycle: UDDS, LA92, US06, HWFET, NN
+10degC/       -> Same tests at 10 degrees C
+0degC/        -> Same tests at 0 degrees C
+-10degC/      -> Same tests at -10 degrees C
+-20degC/      -> Same tests at -20 degrees C
+-20degC Trise -> Temperature drift tests (most realistic for mobile!)
+```
+
+**Step 2 — Load a single .mat file:**
+```python
+import scipy.io as sio
+import numpy as np
+
+data = sio.loadmat("filename.mat")
+print(data.keys())  # See what variables are inside
+
+time    = data['Time'].flatten()
+voltage = data['Voltage'].flatten()
+current = data['Current'].flatten()
+temp    = data['Battery_Temp_degC'].flatten()
+ah      = data['Ah'].flatten()
+```
+
+**Step 3 — Calculate SoC ground truth:**
+The Panasonic dataset has no direct SoC column. Calculate from Ah:
+
+```
+SoC(t) = (Q_max + Ah(t)) / Q_max * 100
+```
+
+Where Q_max = 2.9 Ah and Ah(t) is cumulative amp-hours (negative during discharge).
+
+```python
+Q_max = 2.9  # Ah
+soc = (Q_max + ah) / Q_max * 100
+soc = np.clip(soc, 0, 100)  # clamp to valid range
+```
+
+**Step 4 — Key plots to generate:**
+1. Voltage vs Time for UDDS cycle at 25 degrees C
+2. Current vs Time for UDDS (see the wild fluctuations = dynamic profile)
+3. Temperature vs Time (see it rise during use)
+4. SoC vs Time (the ground truth the AI must learn)
+5. **MOST IMPORTANT:** Overlay all temperatures on one plot — see how voltage differs at -10C vs 25C for the same SoC. This is visually WHY ML beats simple lookup tables.
+6. OCV-SoC curve at each temperature
+
+**Step 5 — Statistical Summary:**
+- Total data points across all temperatures and drive cycles
+- Sampling rate verification (should be 0.1s = 10 Hz)
+- Voltage range, current range, temperature range
+- Total Ah throughput
+
+**Deliverable:** `02_EDA_Panasonic.ipynb` with all plots + a written data summary. This goes directly into your final report Chapter 3.
+
+---
+
+## Phase 1.4 — Traditional Baseline Methods
+**Who:** Atharva leads on EKF, Arpit leads on Coulomb Counting
+**Duration:** ~5-6 days
+**Dataset:** Panasonic 25 degrees C UDDS cycle (start simple, one file)
+
+> **Why you need baselines:** Without them, you cannot prove ML is better. Your thesis claim is "ML outperforms traditional methods." You need numbers from traditional methods to compare against.
+
+### Baseline 1 — Coulomb Counting (Arpit)
+
+**Theory:**
+```
+SoC(t) = SoC(0) - (1 / Q_max) * integral(I(tau) d_tau from 0 to t)
+```
+
+In discrete Python code:
+```python
+def coulomb_counting(current, delta_t, Q_max, initial_soc=100.0):
+    soc_values = [initial_soc]
+    soc = initial_soc
+    for I in current:
+        soc = soc - (I * delta_t / (Q_max * 3600)) * 100
+        soc = np.clip(soc, 0, 100)
+        soc_values.append(soc)
+    return np.array(soc_values[:-1])
+```
+
+**What to show:**
+- Plot: True SoC (from Ah) vs Coulomb Counted SoC on same axis
+- Observe: Error grows over time, especially with noisy current measurements
+- Calculate: RMSE and MAE
+
+**Key insight:** Real phones use Coulomb Counting internally. That is why your battery % gets stuck at "2%" for 20 minutes. Our ML model will fix this.
+
+---
+
+### Baseline 2 — Extended Kalman Filter (Atharva)
+
+**Theory:** EKF treats SoC estimation as a state estimation problem. Battery model gives us the system equations; EKF corrects the estimate using real voltage measurements.
+
+**State vector:** x = [SoC, V_th]
+
+**Process equations:**
+```
+SoC(k+1) = SoC(k) - (eta * I(k) * dt) / Q_max
+
+V_th(k+1) = exp(-dt / (R_th * C_th)) * V_th(k)
+           + R_th * (1 - exp(-dt / (R_th * C_th))) * I(k)
+```
+
+**Measurement equation:**
+```
+V_batt(k) = V_OC(SoC(k)) + I(k) * R_in + V_th(k)
+```
+
+**Battery parameters needed (extract from Panasonic technical PDF):**
+- R_in (internal resistance)
+- R_th, C_th (RC network values)
+- V_OC vs SoC lookup table (from C/20 discharge test)
+
+**What to show:**
+- Plot: True SoC vs EKF SoC on same axis
+- EKF corrects drift unlike Coulomb Counting
+- But EKF accuracy depends on how accurate your battery model parameters are
+- Calculate: RMSE and MAE
+
+---
+
+### End-of-Section-1 Baseline Comparison Table:
+
+| Method | RMSE (%) | MAE (%) | Notes |
+|---|---|---|---|
+| Coulomb Counting | TBD | TBD | Error grows over time |
+| EKF | TBD | TBD | Needs accurate model params |
+| **Our ML (Section 2)** | **TBD** | **TBD** | **Goal: beat both** |
+
+---
+
+## Phase 1.5 — LG HG2 Reference Study (Atharva, parallel task)
+**Duration:** ~2 days
+**Dataset:** `LG 18650HG2.../LG_HG2_Prepared_Dataset_McMasterUniversity_Jan_2020/`
+
+> You said you will use LG HG2 for reference only, not direct training. This phase is purely about understanding their data preparation so you can replicate the same approach on your Panasonic raw data.
+
+Tasks:
+1. Unzip `LGHG2@n10C_to_25degC.zip`
+2. Inspect what columns/structure they used for FNN input
+3. Read `Data Preparation Steps for FNN Based SOC Estimator.pptx` carefully
+4. Note: How did they normalize? What was train/test split? What features did they feed the network?
+5. Do NOT train any model on this data yet.
+
+**Deliverable:** 1-page notes markdown file summarizing their data prep strategy. This becomes the Section 2 data pipeline blueprint.
+
+---
+
+## Section 1 — Final Deliverables Checklist
+
+By end of Section 1, both of you must have:
+
+- [ ] Python environment set up on both laptops
+- [ ] `notebooks/01_EDA_Mendeley.ipynb` — Clean EDA, anomaly removed, plots done
+- [ ] `notebooks/02_EDA_Panasonic.ipynb` — Full EDA, SoC calculated from Ah, multi-temp plots
+- [ ] `notebooks/03_Baselines.ipynb` — Coulomb Counting + EKF code, plots, RMSE/MAE numbers
+- [ ] `src/data_loader.py` — Reusable functions to load .mat and .xlsx files
+- [ ] Notes from LG HG2 data preparation approach
+- [ ] Baseline comparison table with real numbers filled in
+- [ ] A written summary of domain knowledge learned (goes into report Chapter 1 & 2)
+
+---
+
+## Section 1 — What You Will Understand After Completing This
+
+- How a Li-ion battery works chemically and electrically
+- The Thevenin equivalent circuit model
+- What the OCV-SoC curve is and why it's nonlinear
+- Why temperature changes battery behavior visually (you will see it in your own plots)
+- Why Coulomb Counting fails (error drift that you will measure yourself)
+- Why EKF is better but still limited
+- What ground truth SoC means and how to calculate it from Ah data
+- The exact structure and quirks of your primary dataset
+
+This understanding is what separates a student who "downloaded LSTM code from GitHub" from one who genuinely built an ML-based Battery Management System from first principles.
+
+---
+
+## Coming Up in Section 2 (Preview)
+
+```
+SECTION 2 — ML Model Development
+Week 5: Feature Engineering + Normalization strategy
+Week 6: LSTM baseline — Arpit
+Week 6: BiLSTM — Atharva
+Week 7: CNN-LSTM design and training
+Week 8: Hyperparameter tuning (layers, units, learning rate, dropout)
+Week 9: Final comparison table (CC vs EKF vs LSTM vs BiLSTM vs CNN-LSTM)
+```
+
+---
+
+*Plan created: August 2026*
+*Project: AI-Based SoC Estimation of Li-ion Batteries for Mobile Charging Systems*
+*Team: Group 1 — Arpit + Atharva | Guide: Antigravity AI*

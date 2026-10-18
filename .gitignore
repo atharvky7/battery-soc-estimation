@@ -1,0 +1,56 @@
+# Local Python environments, bytecode, and test/tool caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# Jupyter transient state
+.ipynb_checkpoints/
+
+# Local credentials and machine-specific configuration
+.env
+.env.*
+!.env.example
+.aws/
+.ssh/
+.netrc
+credentials.json
+secrets.json
+*.pem
+*.key
+id_rsa
+id_ed25519
+
+# Temporary files and logs
+*.tmp
+*.temp
+*.log
+*.swp
+*.bak
+~$*
+
+# Raw source datasets (retain dataset notes and reusable source such as .m/.mlx)
+/DATASET/**/*.mat
+/DATASET/**/*.csv
+/DATASET/**/*.xlsx
+/DATASET/**/*.zip
+
+# Large generated processed datasets; retain small scalers and sample fixtures
+/data/initial_soc_datasets.pkl
+/data/panasonic_sequences.npz
+
+# Working scratch outputs and generated report exports/archives
+/scratch/
+/*.pdf
+/docs/*.pdf
+/docs/*.html
+/reports/**/*.pdf
+/reports/**/*.html
+/reports/**/*.png
+/reports/**/*.zip
+/Paper/*.pdf
