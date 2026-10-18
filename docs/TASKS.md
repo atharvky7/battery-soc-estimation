@@ -36,6 +36,14 @@ Future tickets remain **Proposed** until ChatGPT and the user approve them. Appr
 - **Status:** Completed.
 - **Acceptance criteria:** Module syntax/import and CLI `--help` pass; frozen artifacts load; one saved 500-sample validation-window API smoke test completes; correction/clipping switches follow their existing formulas; no unrelated project files change.
 
+### T004A — Training/Inference Numerical Consistency Verification
+
+- **Goal:** Compare frozen inference preprocessing and forward outputs with an independent implementation of the saved training contract.
+- **Priority:** High; prerequisite evidence for relying on inference output.
+- **Dependencies:** T003; approved numerical-parity scope.
+- **Status:** Completed.
+- **Acceptance criteria:** Seven focused tests pass; five saved validation windows show channel, feature, standardized-feature, and forward-output parity within documented absolute tolerances; deterministic synthetic fallback remains clearly identified as non-accuracy evidence; no training or artifact modification occurs.
+
 ## Proposed ticket sequence
 
 ### T004 — Preprocessing and Inference Verification
@@ -43,8 +51,16 @@ Future tickets remain **Proposed** until ChatGPT and the user approve them. Appr
 - **Goal:** Verify training/inference feature ordering, scaling, units, and input-contract enforcement.
 - **Priority:** High; required before relying on inference output.
 - **Dependencies:** T003; agreement on window length and timing contract.
-- **Status:** Proposed.
+- **Status:** In Progress (T004A complete; T004B proposed next).
 - **Acceptance criteria:** Focused checks compare training and inference preprocessing; valid 500-sample input is handled consistently; malformed, non-finite, or invalid-timing input receives documented handling; no claim of broad accuracy verification from unit checks alone.
+
+### T004B — Inference Input-Contract Validation
+
+- **Goal:** Define and enforce the inference API's approved 500-sample, finite-value, and timestamp contract.
+- **Priority:** High; completes T004 input-contract verification.
+- **Dependencies:** T003 and T004A; confirm timestamp-gap requirements from `docs/INITIAL_SOC_MODEL_SPEC.md`.
+- **Status:** Proposed.
+- **Acceptance criteria:** Focused tests cover valid 500-sample input and malformed lengths, non-finite values, and invalid timestamp gaps; errors are clear and deterministic; scientific preprocessing and model behavior remain unchanged for valid input; no accuracy claim is inferred from contract tests.
 
 ### T005 — EKF Correctness Repair and Verification
 

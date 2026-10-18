@@ -1,9 +1,9 @@
 # Project Current State
 
 **Project:** Machine Learning-Based Initial State-of-Charge Estimation
-**Last reviewed:** T003 inference repair and verification
+**Last reviewed:** T004A numerical consistency verification
 **Project scope:** Approved initial-SoC estimation only  
-**Evidence note:** Performance figures below are historical saved results, not freshly reproduced. T003 performed one inference smoke test only and did not recompute aggregate metrics.
+**Evidence note:** Performance figures below are historical saved results, not freshly reproduced. T003 performed one inference smoke test and T004A performed numerical parity checks; neither recomputed aggregate metrics.
 
 ## Objective and approved scope
 
@@ -48,7 +48,7 @@ The repository contains EDA, Coulomb-counting/EKF baselines, six observation-dur
 | Grouped correction, clipped | Three −10 °C evaluation files, 315 windows; existing grouped result table | **2.8535 percentage points** |
 | Grouped correction, clipped, post-hoc | −20 °C test; existing grouped result table | **7.8633 percentage points** |
 
-These are different experiments and model states. In particular, 4.1622 is the five-seed mean; it is not the saved seed-42 model's validation score. None of these figures was freshly reproduced in T000–T003. The grouped-correction result tables exist, but the code that generated those grouped tables was not located during T000. Notebook 07 contains a separate random-window correction experiment.
+These are different experiments and model states. In particular, 4.1622 is the five-seed mean; it is not the saved seed-42 model's validation score. None of these figures was freshly reproduced in T000–T004A. The grouped-correction result tables exist, but the code that generated those grouped tables was not located during T000. Notebook 07 contains a separate random-window correction experiment.
 
 ## Known bugs and blocked functionality
 
@@ -60,13 +60,16 @@ These are different experiments and model states. In particular, 4.1622 is the f
 - Processed windows do not retain explicit source filename/start-index identifiers; this limits durable provenance and makes trajectory grouping fragile.
 - The timing contract predicts SoC at the window start but returns it after about 50 seconds. No current-scope implementation verifies that the returned state is advanced to the time of use.
 
-## Testing and validation gaps
+## Testing and validation status
 
-- No automated test suite or standard test command was found.
+- `tests/test_inference_parity.py` provides seven focused checks for training/inference feature contract, saved preprocessing artifacts, the frozen architecture and weights, independent forward calculation, array/tuple input equivalence, and float precision paths. Run with `\.venv\Scripts\python.exe -B tests/test_inference_parity.py` from the repository root.
+- T004A ran all seven checks against five saved validation windows (`X_val` indices 0, 261, 522, 783, and 1044; 500 samples each), after the test's available-memory guard allowed loading the trusted local processed pickle. Maximum observed absolute differences were: channel normalization `5.96046448e-08` (tolerance `1.2e-7`); 12 features `3.7252903e-09` (`2e-7`); standardized features `8.94069672e-07` (`4e-6`); independent unrounded forward outputs `7.39097595e-06` percentage points (`5e-5`); and rounded API output versus reference `0` (`1e-4`). These are parity checks on selected windows, not model accuracy or broad validation.
+- The same seven checks previously passed through a forced deterministic synthetic-input fallback. That is execution and numerical-path evidence only; synthetic predictions are not accuracy evidence. The normal T004A-C rerun used saved validation windows, not the fallback.
+- The parity tolerances use absolute comparisons (`rtol=0`). The standardized-feature bound accommodates an observed float32 endpoint-delta round-trip error amplified by the small frozen temperature-delta scaler. This bound does not establish acceptable predictive error.
 - Notebooks 03 and 05 have no saved code-cell execution history/output; Notebook 04 has only one executed code cell. Notebooks 06 and 07 have saved execution counts and outputs. Other notebook outputs are mixed or partial.
 - A saved dataset-validation text report records window-count reconciliation, split checks, and five example target checks; its producer was not found, so it is historical evidence rather than a repeatable test command.
 - T003 smoke-tested the loaded frozen model on one saved validation window (`N=500`) and checked the API's correction/clipping switch combinations. This is a single-window execution check, not an accuracy evaluation or numerical-consistency study.
-- Full input-contract validation and numerical consistency between training and inference preprocessing remain unverified. The inference API still accepts windows shorter than the specified 500 samples and does not enforce timestamp-gap or finite-value requirements.
+- T004A established numerical consistency within the five-window and dtype scope above. Full input-contract validation remains pending: the inference API still accepts windows shorter than the specified 500 samples and does not enforce timestamp-gap or finite-value requirements. Broader window coverage and model-accuracy verification were not performed by T004A.
 - The EKF's current-sign behavior is defective. Existing saved EKF results must not be presented as a verified correct baseline.
 - Sensor-robustness results use synthetic perturbations, not measurements from deployment sensors.
 - Current data cover one Panasonic cell and do not verify cross-cell or cross-chemistry generalization.
