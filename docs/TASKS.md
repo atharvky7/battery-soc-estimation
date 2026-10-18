@@ -60,6 +60,14 @@ Future tickets remain **Proposed** until ChatGPT and the user approve them. Appr
 - **Status:** Completed.
 - **Acceptance criteria:** The corrected helper is used by the notebook loop; 11 focused sign, bounds, capacity-conversion, polarization, voltage-direction, and Coulomb-counting checks pass; initial-reference-SoC assumption and historical result status are stated; no full trajectory or saved result is regenerated.
 
+### T005B — EKF Loop Timing and Measurement-Update Verification
+
+- **Goal:** Resolve the EKF sample/time convention and verify the complete loop's deterministic prediction and measurement-update behavior.
+- **Priority:** High; closes deterministic correctness verification for the baseline.
+- **Dependencies:** T005A; establish whether current and timestep indices represent interval start and sample time.
+- **Status:** Completed within deterministic synthetic-test scope.
+- **Acceptance criteria:** Sample 0 receives measurement update without propagation; later prediction uses interval-start current and actual interval duration; measurement update uses current-sample current; innovation, Jacobian, gain, Joseph covariance and state flow pass focused deterministic tests; notebook outputs and historical metrics remain unchanged.
+
 ## Proposed ticket sequence
 
 ### T004 — Preprocessing and Inference Verification
@@ -75,16 +83,15 @@ Future tickets remain **Proposed** until ChatGPT and the user approve them. Appr
 - **Goal:** Correct the current-sign defect and verify discharge/charge behavior in the EKF process model.
 - **Priority:** High; required before quoting EKF as a sound benchmark.
 - **Dependencies:** Approval; confirmation of intended current and polarization sign conventions.
-- **Status:** In Progress (T005A complete; T005B proposed next).
-- **Acceptance criteria:** Focused prediction tests show discharge lowers SoC and charging raises it; T005B resolves loop timing and verifies the measurement update and complete EKF state flow; voltage conventions remain internally consistent; historical metrics are not attributed to repaired code without a new approved run.
+- **Status:** Completed within deterministic correctness-verification scope (T005A and T005B complete).
+- **Acceptance criteria:** Focused prediction and loop tests show the documented sign and sample-time behavior; 11 prediction tests and 14 loop tests pass; historical metrics are not attributed to repaired code. Real-data evaluation and scientific baseline suitability remain open.
 
-### T005B — EKF Loop Timing and Measurement-Update Verification
+### T005 follow-up issues (not a new ticket)
 
-- **Goal:** Resolve the possible first-step time-index alignment issue and verify the complete EKF prediction/update flow with deterministic focused cases.
-- **Priority:** High; required before treating the EKF baseline as fully verified.
-- **Dependencies:** T005A; establish whether `current[k]` and `dt_arr[k]` represent the transition into or out of sample `k`.
-- **Status:** Proposed.
-- **Acceptance criteria:** Document the sample/time convention; tests exercise the actual loop or extracted deterministic update logic without running the full notebook; verify measurement innovation and update behavior, covariance/state consistency, boundary behavior, and index alignment; do not regenerate or claim historical trajectory metrics.
+- Real-data EKF trajectory evaluation and accuracy remain unverified; historical EKF metrics predate the repairs.
+- OCV validity across the dataset's temperature and SoC range needs assessment.
+- Timestamp quality needs assessment; the notebook currently replaces nonpositive intervals with the median positive interval.
+- Baseline-comparison fairness remains open because the EKF starts from reference initial SoC while the ML model estimates unknown initial SoC from a window.
 
 ### T006 — Dependency and Path Portability
 

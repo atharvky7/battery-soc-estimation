@@ -70,8 +70,8 @@ class EKFPrediction(unittest.TestCase):
                  and isinstance(node.func, ast.Name) and node.func.id == "ekf_predict_state"]
         self.assertEqual(len(calls), 1)
         self.assertEqual([node.id for node in calls[0].args],
-                         ["x", "I", "dt", "ETA", "Q_MAX", "R_TH", "TAU"])
-        assignment = next(node for node in self.loop.body if isinstance(node, ast.Assign)
+                         ["x", "I_prop", "dt", "ETA", "Q_MAX", "R_TH", "TAU"])
+        assignment = next(node for node in ast.walk(self.loop) if isinstance(node, ast.Assign)
                           and node.value is calls[0])
         self.assertIsInstance(assignment.targets[0], ast.Tuple)
         self.assertEqual([node.id for node in assignment.targets[0].elts], ["x_pred", "alpha"])
