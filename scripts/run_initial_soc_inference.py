@@ -27,6 +27,7 @@ Important Methodological Principles:
 
 import sys
 import argparse
+import csv
 import pickle
 from pathlib import Path
 from typing import Dict, Tuple, Union, Optional
@@ -121,6 +122,70 @@ FEATURE_NAMES = [
 ]
 
 
+def _real_array(value, name):
+    """Validate real numeric input without converting its scientific dtype."""
+    if np.ma.isMaskedArray(value):
+        raise TypeError(f"{name} must not be a masked array.")
+    try:
+        array = np.asarray(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be a rectangular numeric array.") from exc
+    if array.dtype.kind not in "iuf":
+        raise TypeError(f"{name} must contain real numeric values.")
+    if not np.all(np.isfinite(array)):
+        raise ValueError(f"{name} must contain only finite values (no NaN or Inf).")
+    return array
+
+
+def _validate_channels(v_raw, i_raw, t_raw):
+    channels = tuple(_real_array(value, name) for value, name in
+                     zip((v_raw, i_raw, t_raw), ("Voltage", "Current", "Temperature")))
+    if any(channel.ndim != 1 for channel in channels):
+        raise ValueError("Each measurement channel must be one-dimensional.")
+    if len({len(channel) for channel in channels}) != 1:
+        raise ValueError("All measurement channels must have identical lengths.")
+    if len(channels[0]) != 500:
+        raise ValueError(f"Expected exactly 500 observations; got {len(channels[0])}.")
+    return channels
+
+
+def _measurement_channels(window_data):
+    if isinstance(window_data, tuple):
+        if len(window_data) != 3:
+            raise ValueError("Measurement tuple must contain exactly three channels (V, I, T).")
+        return _validate_channels(*window_data)
+    if isinstance(window_data, np.ndarray):
+        array = _real_array(window_data, "Measurements")
+        if array.shape != (500, 3):
+            raise ValueError(f"Measurements must have shape (500, 3) in V/I/T order; got {array.shape}.")
+        return _validate_channels(array[:, 0], array[:, 1], array[:, 2])
+    raise TypeError("Measurements must be a (500, 3) numpy array or three-channel tuple (V, I, T).")
+
+
+def _validate_timestamps(timestamps):
+    """SPEC-GROUP1-SOC-001 section 2: seconds, elapsed 40–60 s, gap <=0.5 s.
+
+    No per-interval tolerance around nominal 10 Hz is specified. Omitting
+    timestamps preserves legacy inference but leaves timing unverified.
+    """
+    if timestamps is None:
+        return False
+    times = _real_array(timestamps, "Timestamps")
+    if times.shape != (500,):
+        raise ValueError(f"Timestamps must have shape (500,) in seconds; got {times.shape}.")
+    # Avoid unsigned/integer subtraction overflow; timestamps are not ML inputs.
+    times = times.astype(np.float64)
+    gaps = np.diff(times)
+    if not np.all(gaps > 0):
+        raise ValueError("Timestamps must be strictly increasing (no duplicates or backward steps).")
+    if np.max(gaps) > 0.5:
+        raise ValueError("Timestamp sample gaps must not exceed 0.5 seconds.")
+    elapsed = times[-1] - times[0]
+    if not 40.0 <= elapsed <= 60.0:
+        raise ValueError(f"Timestamp elapsed duration must be between 40 and 60 seconds; got {elapsed:g}.")
+    return True
+
+
 def extract_group_c_features(
     v_raw: np.ndarray,
     i_raw: np.ndarray,
@@ -132,9 +197,9 @@ def extract_group_c_features(
     Extracts the exact 12 Group C features from raw physical signals.
     
     Args:
-        v_raw: 1D array of terminal voltages [V] (length N, nominally 500)
-        i_raw: 1D array of load currents [A] (length N, nominally 500)
-        t_raw: 1D array of battery temperatures [°C] (length N, nominally 500)
+        v_raw: 1D array of terminal voltages [V] (exactly 500 samples)
+        i_raw: 1D array of load currents [A] (exactly 500 samples)
+        t_raw: 1D array of battery temperatures [°C] (exactly 500 samples)
         feat_min: (3,) array with minimum channel values from training
         feat_range: (3,) array with channel ranges from training
         
@@ -142,10 +207,7 @@ def extract_group_c_features(
         feats_12: (1, 12) array of extracted summary features
         x_norm: (N, 3) channel-normalized sequence
     """
-    assert len(v_raw) == len(i_raw) == len(t_raw), "All channel arrays must have identical length"
-    n_samples = len(v_raw)
-    if n_samples < 10:
-        raise ValueError(f"Observation window too short ({n_samples} samples). Nominal is 500 samples.")
+    v_raw, i_raw, t_raw = _validate_channels(v_raw, i_raw, t_raw)
 
     # Stack raw physical channels
     x_raw = np.column_stack([v_raw, i_raw, t_raw])  # (N, 3)
@@ -182,7 +244,9 @@ def predict_initial_soc(
     window_data: Union[np.ndarray, Tuple[np.ndarray, np.ndarray, np.ndarray]],
     artifacts: Optional[Dict[str, object]] = None,
     clip_physical: bool = True,
-    apply_current_correction: bool = False
+    apply_current_correction: bool = False,
+    *,
+    timestamps: Optional[np.ndarray] = None
 ) -> Dict[str, Union[float, np.ndarray, Dict[str, float]]]:
     """
     Estimates initial State of Charge (SoC) from a single observation window.
@@ -195,6 +259,9 @@ def predict_initial_soc(
         clip_physical: Whether to enforce physical [0.0, 100.0]% bounds.
         apply_current_correction: Whether to apply the empirical trajectory-grouped
             current-dependent offset: e_hat(I) = 1.0231 + 2.3575 * mean(I_phys).
+        timestamps: Optional 500 strictly increasing finite times in seconds.
+            Elapsed duration must be 40–60 s and every gap <=0.5 s (spec section 2).
+            Without timestamps, sampling timing cannot be verified.
             
     Returns:
         dict containing:
@@ -203,7 +270,10 @@ def predict_initial_soc(
             - 'corrected_soc_pct': Prediction after empirical current correction [%] (if enabled)
             - 'operating_stats': dict of mean_voltage_V, mean_current_A, mean_temp_C
             - 'features_12': dict mapping feature name to normalized value
+            - 'timing_verified': Whether supplied timestamps passed spec checks
     """
+    v_raw, i_raw, t_raw = _measurement_channels(window_data)
+    timing_verified = _validate_timestamps(timestamps)
     if artifacts is None:
         artifacts = load_frozen_artifacts()
 
@@ -212,14 +282,6 @@ def predict_initial_soc(
     feat_min = artifacts["feat_min"]
     feat_range = artifacts["feat_range"]
     device = artifacts["device"]
-
-    # Parse input channels
-    if isinstance(window_data, tuple) and len(window_data) == 3:
-        v_raw, i_raw, t_raw = window_data
-    elif isinstance(window_data, np.ndarray) and window_data.ndim == 2 and window_data.shape[1] == 3:
-        v_raw, i_raw, t_raw = window_data[:, 0], window_data[:, 1], window_data[:, 2]
-    else:
-        raise ValueError("Input window_data must be (N, 3) array or tuple (v, i, t).")
 
     # Extract features
     feats_12, _ = extract_group_c_features(v_raw, i_raw, t_raw, feat_min, feat_range)
@@ -254,6 +316,7 @@ def predict_initial_soc(
         final_soc = float(active_soc)
 
     return {
+        "timing_verified": timing_verified,
         "predicted_soc_pct": round(final_soc, 4),
         "raw_model_soc_pct": round(float(pred_raw_pct), 4),
         "corrected_soc_pct": round(float(np.clip(pred_corrected_pct, 0.0, 100.0) if clip_physical else pred_corrected_pct), 4),
@@ -271,13 +334,62 @@ def predict_initial_soc(
 # -------------------------------------------------------------------------
 # 5. CLI Interface & Self-Test Mode
 # -------------------------------------------------------------------------
+def load_window_csv(path):
+    """Load only the explicit CSV layouts approved in T004B.
+
+    Headerless files must contain V/I/T. Headered files must use exactly
+    Voltage,Current,Temperature or Time,Voltage,Current,Temperature. Time is
+    in seconds; units for measurements are V/A/degC. No columns are guessed.
+    """
+    values = []
+    timestamps = None
+    with open(path, newline="", encoding="utf-8-sig") as handle:
+        reader = csv.reader(handle, strict=True)
+        try:
+            first = next(reader, None)
+            if first is None:
+                raise ValueError("CSV is empty; expected 500 measurement rows.")
+            first = [field.strip() for field in first]
+            if first == ["Voltage", "Current", "Temperature"]:
+                width = 3
+            elif first == ["Time", "Voltage", "Current", "Temperature"]:
+                width = 4
+            else:
+                width = 3
+                values.append(first)
+            for row in reader:
+                if len(values) >= 500:
+                    raise ValueError("CSV must contain exactly 500 measurement rows.")
+                values.append(row)
+        except csv.Error as exc:
+            raise ValueError(f"Malformed CSV: {exc}") from exc
+    if len(values) != 500:
+        raise ValueError(f"CSV must contain exactly 500 measurement rows; got {len(values)}.")
+    numeric = []
+    for index, row in enumerate(values, start=1):
+        if len(row) != width:
+            raise ValueError(f"CSV data row {index} must contain exactly {width} values in the approved order.")
+        try:
+            numeric.append([float(field) for field in row])
+        except (ValueError, TypeError) as exc:
+            raise ValueError(f"CSV data row {index} must contain numeric values; check missing fields and the exact supported headers.") from exc
+    data = np.asarray(numeric)
+    if width == 4:
+        timestamps, measurements = data[:, 0], data[:, 1:]
+    else:
+        measurements = data
+    _measurement_channels(measurements)
+    _validate_timestamps(timestamps)
+    return measurements, timestamps
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Run frozen Group C initial-SoC estimation on a 50s observation window."
     )
     parser.add_argument(
         "--csv", type=str, default=None,
-        help="Path to CSV file with 500 rows containing [Voltage, Current, Temperature]."
+        help="CSV with 500 V/I/T rows: headerless, Voltage,Current,Temperature, or Time,Voltage,Current,Temperature (seconds)."
     )
     parser.add_argument(
         "--test-sample", type=int, default=None,
@@ -346,6 +458,7 @@ def main():
               f"I={result['operating_stats']['mean_current_A']:+.2f}A, "
               f"T={result['operating_stats']['mean_temp_C']:.1f}°C")
         print(f"Extracted 12 Features (Group C): {result['features_12']}")
+        print("Timing unverified: timestamps were not supplied to inference.")
         print("=" * 65)
         print()
         return
@@ -357,26 +470,26 @@ def main():
             print(f"Error: CSV file not found: {csv_path}")
             sys.exit(1)
 
-        data = np.genfromtxt(csv_path, delimiter=",", skip_header=1)
-        if data.shape[1] > 3:
-            # If time column exists at index 0, take indices 1, 2, 3
-            data = data[:, 1:4]
-        if data.shape[1] != 3:
-            print(f"Error: CSV must have 3 columns [Voltage, Current, Temp]. Found shape {data.shape}.")
-            sys.exit(1)
-
-        result = predict_initial_soc(
-            data,
-            artifacts=artifacts,
-            clip_physical=not args.no_clip,
-            apply_current_correction=args.apply_correction
-        )
+        try:
+            data, timestamps = load_window_csv(csv_path)
+            result = predict_initial_soc(
+                data,
+                artifacts=artifacts,
+                clip_physical=not args.no_clip,
+                apply_current_correction=args.apply_correction,
+                timestamps=timestamps
+            )
+        except (ValueError, TypeError, OSError) as exc:
+            parser.error(str(exc))
 
         print("\n" + "=" * 60)
         print(f"INITIAL SOC INFERENCE REPORT: {csv_path.name}")
         print("="*60)
         print(f"Estimated Initial SoC: {result['predicted_soc_pct']:.2f} %")
         print(f"Raw Model Output:      {result['raw_model_soc_pct']:.2f} %")
+        print("Timing: " + ("supplied timestamps passed specification checks."
+                            if result["timing_verified"] else
+                            "unverified (no timestamps supplied)."))
         if args.apply_correction:
             print(f"Applied Correction:    {result['correction_delta_pct']:+.2f} %")
         print(f"Mean Operating Point:  V={result['operating_stats']['mean_voltage_V']:.3f}V, "

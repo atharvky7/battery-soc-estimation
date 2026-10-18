@@ -1,9 +1,9 @@
 # Project Current State
 
-**Project:** Machine Learning-Based Initial State-of-Charge Estimation
-**Last reviewed:** T004A numerical consistency verification
+**Project:** Machine Learning-Based Initial State-of-Charge Estimation for Lithium-Ion Batteries
+**Last reviewed:** T004B input-contract validation
 **Project scope:** Approved initial-SoC estimation only  
-**Evidence note:** Performance figures below are historical saved results, not freshly reproduced. T003 performed one inference smoke test and T004A performed numerical parity checks; neither recomputed aggregate metrics.
+**Evidence note:** Performance figures below are historical saved results, not freshly reproduced. T003 performed one inference smoke test, T004A performed numerical parity checks, and T004B checked the input contract; none recomputed aggregate metrics.
 
 ## Objective and approved scope
 
@@ -56,20 +56,23 @@ These are different experiments and model states. In particular, 4.1622 is the f
 - `notebooks/02_Baselines.ipynb` predicts SoC using subtraction of current. Given the declared negative-discharge convention, negative discharge current increases predicted SoC in the process step. The EKF needs a correctness repair and focused verification. The saved EKF metric does not establish correctness.
 - `notebooks/04_ML_Baselines.ipynb` calls `np.trapz`; the inspected project environment's NumPy 2.5.2 does not expose `np.trapz` and does expose `np.trapezoid`.
 - Several notebooks and `scripts/run_feature_ablation.py` contain a machine-specific absolute root pointing to an earlier project copy. New development should use repository-relative paths.
-- The inference script accepts windows of ten or more samples although its documented model contract specifies 500 samples. It does not enforce the specification's timestamp-gap and finite-value requirements.
+- `scripts/run_initial_soc_inference.py` requires exactly 500 rows and three finite real numeric V/I/T channels for the frozen model. Units (V, A, °C), synchronous sampling, and V/I/T ordering are caller contracts; measurement values cannot independently prove these semantics.
+- Optional timestamps must be 500 finite values, strictly increasing, with elapsed time from 40 to 60 seconds and maximum gap no greater than 0.5 seconds, as specified in `docs/INITIAL_SOC_MODEL_SPEC.md` section 2. If omitted, inference reports timing as unverified. Passing these duration and gap checks does not establish uniform 10 Hz sampling; the specification does not define a per-interval tolerance around nominal 10 Hz.
+- CLI CSV accepts headerless V/I/T rows, the exact `Voltage,Current,Temperature` header, or `Time,Voltage,Current,Temperature` with seconds. Other layouts are rejected rather than guessed.
 - Processed windows do not retain explicit source filename/start-index identifiers; this limits durable provenance and makes trajectory grouping fragile.
 - The timing contract predicts SoC at the window start but returns it after about 50 seconds. No current-scope implementation verifies that the returned state is advanced to the time of use.
 
 ## Testing and validation status
 
 - `tests/test_inference_parity.py` provides seven focused checks for training/inference feature contract, saved preprocessing artifacts, the frozen architecture and weights, independent forward calculation, array/tuple input equivalence, and float precision paths. Run with `\.venv\Scripts\python.exe -B tests/test_inference_parity.py` from the repository root.
+- `tests/test_inference_contract.py` provides 17 deterministic checks for array/tuple formats, exact sample/channel dimensions, malformed/nonnumeric/nonfinite data, timestamp rules, supported and malformed CSV layouts, CLI behavior, and frozen prediction values. The T004B run passed all 17. The T004A suite was rerun and passed all seven tests on five saved validation windows.
 - T004A ran all seven checks against five saved validation windows (`X_val` indices 0, 261, 522, 783, and 1044; 500 samples each), after the test's available-memory guard allowed loading the trusted local processed pickle. Maximum observed absolute differences were: channel normalization `5.96046448e-08` (tolerance `1.2e-7`); 12 features `3.7252903e-09` (`2e-7`); standardized features `8.94069672e-07` (`4e-6`); independent unrounded forward outputs `7.39097595e-06` percentage points (`5e-5`); and rounded API output versus reference `0` (`1e-4`). These are parity checks on selected windows, not model accuracy or broad validation.
 - The same seven checks previously passed through a forced deterministic synthetic-input fallback. That is execution and numerical-path evidence only; synthetic predictions are not accuracy evidence. The normal T004A-C rerun used saved validation windows, not the fallback.
 - The parity tolerances use absolute comparisons (`rtol=0`). The standardized-feature bound accommodates an observed float32 endpoint-delta round-trip error amplified by the small frozen temperature-delta scaler. This bound does not establish acceptable predictive error.
 - Notebooks 03 and 05 have no saved code-cell execution history/output; Notebook 04 has only one executed code cell. Notebooks 06 and 07 have saved execution counts and outputs. Other notebook outputs are mixed or partial.
 - A saved dataset-validation text report records window-count reconciliation, split checks, and five example target checks; its producer was not found, so it is historical evidence rather than a repeatable test command.
 - T003 smoke-tested the loaded frozen model on one saved validation window (`N=500`) and checked the API's correction/clipping switch combinations. This is a single-window execution check, not an accuracy evaluation or numerical-consistency study.
-- T004A established numerical consistency within the five-window and dtype scope above. Full input-contract validation remains pending: the inference API still accepts windows shorter than the specified 500 samples and does not enforce timestamp-gap or finite-value requirements. Broader window coverage and model-accuracy verification were not performed by T004A.
+- T004A established numerical consistency within the five-window and dtype scope above. T004B completed the documented input-contract checks. No new model-accuracy results were obtained, and no scientific artifacts were modified. Inference cannot verify timing when timestamps are absent or establish channel units and semantics from numeric arrays alone. Broader model-accuracy verification was not performed by either ticket.
 - The EKF's current-sign behavior is defective. Existing saved EKF results must not be presented as a verified correct baseline.
 - Sensor-robustness results use synthetic perturbations, not measurements from deployment sensors.
 - Current data cover one Panasonic cell and do not verify cross-cell or cross-chemistry generalization.
