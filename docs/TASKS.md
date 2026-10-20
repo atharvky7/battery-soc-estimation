@@ -130,7 +130,7 @@ Future tickets remain **Proposed** until ChatGPT and the user approve them. Appr
 - **Goal:** Trace result tables to producing code/configuration/checkpoints and reconcile conflicting reports.
 - **Priority:** High; necessary for defensible academic claims.
 - **Dependencies:** T002; T003–T006 as needed to identify current behavior.
-- **Status:** In progress (T007A complete; T007B proposed).
+- **Status:** Completed within documentation and reporting-disposition scope (T007A and T007B complete). Historical scientific evidence gaps remain open.
 - **Acceptance criteria:** Frozen seed-42 metrics remain distinct from five-seed means and earlier 13-feature results; grouped-correction producer or provenance gap is recorded; conflicting tables and report claims are resolved or clearly marked historical; saved results are not silently overwritten.
 
 ### T007B — Authoritative Results Register and Report Reconciliation
@@ -138,7 +138,7 @@ Future tickets remain **Proposed** until ChatGPT and the user approve them. Appr
 - **Goal:** Establish an authoritative, evidence-linked result register; decide how unresolved historical claims and reports should be reconciled; define the evidence required for future performance claims.
 - **Priority:** High; follows the read-only provenance audit and precedes prominent reuse of disputed claims.
 - **Dependencies:** T007A; user/ChatGPT decisions on authoritative statistics, report correction policy, and evidence gaps.
-- **Status:** Proposed.
+- **Status:** Completed within the approved documentation scope; unresolved scientific claims remain explicitly qualified.
 - **Acceptance criteria:** Seed-42, five-seed, 13-feature, grouped-correction, GRU, robustness, and post-hoc test results are separately identified with source, evaluation context, provenance class, and limitations; disputed historical claims are corrected only through approved traceable edits or explicitly marked unresolved; no saved experiment result is overwritten or claimed as freshly reproduced without new approved verification.
 
 ## Additional proposed work identified by T000

@@ -1,7 +1,7 @@
 # Project Current State
 
 **Project:** Machine Learning-Based Initial State-of-Charge Estimation for Lithium-Ion Batteries
-**Last reviewed:** T007A experiment provenance audit
+**Last reviewed:** T007B authoritative results register
 **Project scope:** Approved initial-SoC estimation only  
 **Evidence note:** Performance figures below are historical saved results, not freshly reproduced. T003 performed one inference smoke test, T004A performed numerical parity checks, and T004B checked the input contract; none recomputed aggregate metrics.
 
@@ -61,7 +61,9 @@ These are different experiments and model states. In particular, 4.1622 is the f
 - The −20 °C test data were inspected post hoc in historical residual and correction analyses. Existing test results must be labeled historical post-hoc analysis, not independent final validation.
 - Historical report conflicts and missing run-to-artifact manifests remain unresolved. Preserve original reports and result tables until a separately approved reconciliation specifies traceable corrections; do not treat matching filenames or current hashes as proof of historical run identity.
 
-T007A is complete as a read-only audit. T007B is proposed to establish an authoritative result register, decide report reconciliation, and resolve or formally retain the evidence gaps before any new performance claims or evaluation.
+T007A's read-only audit is complete. T007B's results register and reporting dispositions are complete within documentation scope; unresolved scientific claims and evidence gaps remain recorded for future approved work.
+
+`docs/RESULTS_REGISTER.md` now provides the evidence-linked register and proposed public-claims policy based on T007A. T007B is complete within documentation and reporting-disposition scope; no experiments or historical report edits were made. Disputed scientific interpretations, the absent grouped-correction producer, missing run manifests, and the need for an agreed independent evaluation remain open. Treat the register's dispositions as the reviewed reporting record; it does not establish newly reproduced model accuracy.
 
 ## Known bugs and blocked functionality
 
@@ -97,7 +99,7 @@ T007A is complete as a read-only audit. T007B is proposed to establish an author
 - T006B did not execute notebooks, feature ablation, training, or experiments and did not regenerate saved metrics, plots, or other historical results. The supported notebook launch directories are the repository root and `notebooks/`; running from another directory is unsupported and raises an error.
 - Sensor-robustness results use synthetic perturbations, not measurements from deployment sensors.
 - Current data cover one Panasonic cell and do not verify cross-cell or cross-chemistry generalization.
-- Reports contain conflicting values for the frozen model versus ablation means, architecture parameter counts, training settings, capacity estimates, and experiment counts. The T007A audit documents these conflicts and their evidence; reconciliation and any historical report correction remain pending T007B approval.
+- Reports contain conflicting values for the frozen model versus ablation means, architecture parameter counts, training settings, capacity estimates, and experiment counts. The T007A audit and T007B register document these conflicts and proposed dispositions. Original reports remain unchanged; any further corrections require an explicitly approved ticket.
 
 ## Environment and Git status
 
