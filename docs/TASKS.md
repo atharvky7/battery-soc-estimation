@@ -84,6 +84,14 @@ Future tickets remain **Proposed** until ChatGPT and the user approve them. Appr
 - **Status:** Completed.
 - **Acceptance criteria:** All seven notebooks resolve from the repository root and `notebooks/` using repository markers and reject unrelated directories; the script uses `__file__`-relative resolution; Notebook 04 uses `np.trapezoid` with existing arguments; seven portability, 11 EKF baseline, and 14 EKF-loop tests pass; notebook outputs and metadata are preserved; no experiment or training is run.
 
+### T007A — Read-Only Experiment Provenance Audit
+
+- **Goal:** Trace the selected frozen model and major historical results to available code, artifacts, tables, and documentation, and classify unresolved provenance.
+- **Priority:** High; supports defensible reporting and evaluation planning.
+- **Dependencies:** T003–T006; read-only audit boundaries.
+- **Status:** Completed.
+- **Acceptance criteria:** `docs/RESULTS_PROVENANCE_AUDIT.md` distinguishes verified artifact properties, source-traceable historical results, provenance-incomplete evidence, and unknowns; reconciles saved-table arithmetic without claiming fresh model evaluation; records conflicts, test-set history, missing grouped-correction producer, and follow-up decisions.
+
 ## Proposed ticket sequence
 
 ### T004 — Preprocessing and Inference Verification
@@ -122,8 +130,16 @@ Future tickets remain **Proposed** until ChatGPT and the user approve them. Appr
 - **Goal:** Trace result tables to producing code/configuration/checkpoints and reconcile conflicting reports.
 - **Priority:** High; necessary for defensible academic claims.
 - **Dependencies:** T002; T003–T006 as needed to identify current behavior.
-- **Status:** Proposed (next ticket).
-- **Acceptance criteria:** Frozen seed-42 metrics remain distinct from five-seed means; grouped-correction producer or provenance gap is recorded; conflicting tables and report claims are resolved or clearly marked historical; saved results are not silently overwritten.
+- **Status:** In progress (T007A complete; T007B proposed).
+- **Acceptance criteria:** Frozen seed-42 metrics remain distinct from five-seed means and earlier 13-feature results; grouped-correction producer or provenance gap is recorded; conflicting tables and report claims are resolved or clearly marked historical; saved results are not silently overwritten.
+
+### T007B — Authoritative Results Register and Report Reconciliation
+
+- **Goal:** Establish an authoritative, evidence-linked result register; decide how unresolved historical claims and reports should be reconciled; define the evidence required for future performance claims.
+- **Priority:** High; follows the read-only provenance audit and precedes prominent reuse of disputed claims.
+- **Dependencies:** T007A; user/ChatGPT decisions on authoritative statistics, report correction policy, and evidence gaps.
+- **Status:** Proposed.
+- **Acceptance criteria:** Seed-42, five-seed, 13-feature, grouped-correction, GRU, robustness, and post-hoc test results are separately identified with source, evaluation context, provenance class, and limitations; disputed historical claims are corrected only through approved traceable edits or explicitly marked unresolved; no saved experiment result is overwritten or claimed as freshly reproduced without new approved verification.
 
 ## Additional proposed work identified by T000
 
@@ -158,5 +174,13 @@ Future tickets remain **Proposed** until ChatGPT and the user approve them. Appr
 - **Dependencies:** T000; T007; user/guide decision on external validation and acceptance criteria.
 - **Status:** Proposed.
 - **Acceptance criteria:** Splits and metrics are declared before new evaluation; trajectory-level dependence and the 40–100% cold-test range are documented; external-data validation is performed only if approved and data/labels are suitable.
+
+### T012 — Public README and Repository Publication Readiness
+
+- **Goal:** Prepare an approved public-facing project README and repository publication review based on reconciled, evidence-supported claims.
+- **Priority:** Later; after T007B and any required evaluation-protocol decisions.
+- **Dependencies:** T007B; approval of repository visibility/publication scope and final claims.
+- **Status:** Proposed.
+- **Acceptance criteria:** README accurately describes the initial-SoC-only scope, method, requirements, artifact/data availability, reproduction limits, and evidence-qualified results; sensitive, private, or uncleared third-party material is excluded; repository-publication readiness is reviewed before any visibility change or release.
 
 All tickets remain within initial SoC estimation. Continuous tracking, charger-control implementation, and hardware integration require a separately approved scope change.

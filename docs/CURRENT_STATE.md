@@ -1,7 +1,7 @@
 # Project Current State
 
 **Project:** Machine Learning-Based Initial State-of-Charge Estimation for Lithium-Ion Batteries
-**Last reviewed:** T006B notebook and experiment-script portability
+**Last reviewed:** T007A experiment provenance audit
 **Project scope:** Approved initial-SoC estimation only  
 **Evidence note:** Performance figures below are historical saved results, not freshly reproduced. T003 performed one inference smoke test, T004A performed numerical parity checks, and T004B checked the input contract; none recomputed aggregate metrics.
 
@@ -48,7 +48,20 @@ The repository contains EDA, Coulomb-counting/EKF baselines, six observation-dur
 | Grouped correction, clipped | Three −10 °C evaluation files, 315 windows; existing grouped result table | **2.8535 percentage points** |
 | Grouped correction, clipped, post-hoc | −20 °C test; existing grouped result table | **7.8633 percentage points** |
 
-These are different experiments and model states. In particular, 4.1622 is the five-seed mean; it is not the saved seed-42 model's validation score. None of these figures was freshly reproduced in T000–T004A. The grouped-correction result tables exist, but the code that generated those grouped tables was not located during T000. Notebook 07 contains a separate random-window correction experiment.
+These are different experiments and model states. In particular, 4.1622 is the five-seed mean; it is not the saved seed-42 model's validation score. These remain historical saved results and were not freshly reproduced by the provenance audit. The grouped-correction result tables exist, but their original producing script (`scripts/run_grouped_correction.py`) is unavailable in the current repository. Notebook 07 contains a separate random-window correction experiment.
+
+## Experiment provenance audit (T007A)
+
+`docs/RESULTS_PROVENANCE_AUDIT.md` is the detailed, evidence-labeled audit of the saved tables, source code, selected artifact metadata, notebook outputs, and report claims. It records source-traceable results separately from verified artifact properties, provenance-incomplete tables, and inferences or unknowns. The audit inspected saved values and performed arithmetic; it did not run inference, training, notebooks, or dataset evaluation.
+
+- The frozen Group C seed-42 checkpoint's historical validation RMSE is **4.3005 pp**. **4.1622 ± 0.1980 pp** is a separate five-seed validation mean and population standard deviation; neither statistic was freshly reproduced in T007A.
+- The historical **4.0331 pp** validation result is from a separate 13-feature MLP experiment, not the frozen 12-feature Group C model.
+- The saved GRU checkpoint contains **14,305** parameter elements, conflicting with historical reports of 60,869 and “about 20×” model size. This is a checked property of the present checkpoint; a different historical run cannot be ruled out.
+- The grouped correction tables have no recoverable producer in this repository. Saved-table arithmetic gives an approximate pooled clipped validation RMSE of **2.9054 pp**, which conflicts with the historical overall corrected RMSE claim of **2.60**. This derived aggregation is not a newly evaluated model metric.
+- The −20 °C test data were inspected post hoc in historical residual and correction analyses. Existing test results must be labeled historical post-hoc analysis, not independent final validation.
+- Historical report conflicts and missing run-to-artifact manifests remain unresolved. Preserve original reports and result tables until a separately approved reconciliation specifies traceable corrections; do not treat matching filenames or current hashes as proof of historical run identity.
+
+T007A is complete as a read-only audit. T007B is proposed to establish an authoritative result register, decide report reconciliation, and resolve or formally retain the evidence gaps before any new performance claims or evaluation.
 
 ## Known bugs and blocked functionality
 
@@ -84,7 +97,7 @@ These are different experiments and model states. In particular, 4.1622 is the f
 - T006B did not execute notebooks, feature ablation, training, or experiments and did not regenerate saved metrics, plots, or other historical results. The supported notebook launch directories are the repository root and `notebooks/`; running from another directory is unsupported and raises an error.
 - Sensor-robustness results use synthetic perturbations, not measurements from deployment sensors.
 - Current data cover one Panasonic cell and do not verify cross-cell or cross-chemistry generalization.
-- Reports contain conflicting values for the frozen model versus ablation means, architecture parameter counts, training settings, capacity estimates, and experiment counts. Reconcile against code and saved artifacts before reuse.
+- Reports contain conflicting values for the frozen model versus ablation means, architecture parameter counts, training settings, capacity estimates, and experiment counts. The T007A audit documents these conflicts and their evidence; reconciliation and any historical report correction remain pending T007B approval.
 
 ## Environment and Git status
 
